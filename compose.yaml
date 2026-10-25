@@ -1,0 +1,72 @@
+name: rightmo
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: rightmo
+      MYSQL_USER: rightmo
+      MYSQL_PASSWORD: rightmo_local
+      MYSQL_ROOT_PASSWORD: rightmo_root_local
+    ports:
+      - "127.0.0.1:33079:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql-init.sql:/docker-entrypoint-initdb.d/01-testing.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u rightmo -prightmo_local --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  app:
+    build:
+      context: .
+      target: app
+    env_file: .env.docker
+    volumes:
+      - uploads:/var/www/html/storage/app/public
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  nginx:
+    build:
+      context: .
+      target: nginx
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - uploads:/var/www/html/storage/app/public:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/up"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  web:
+    build:
+      context: ../rightmo-web
+    environment:
+      API_INTERNAL_URL: http://nginx
+      APP_ORIGIN: http://localhost:3000
+      DISPLAY_CURRENCY: USD
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      nginx:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+volumes:
+  mysql_data:
+  uploads:

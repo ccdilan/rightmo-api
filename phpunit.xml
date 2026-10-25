@@ -26,9 +26,9 @@
         <env name="DB_CONNECTION" value="mysql"/>
         <env name="DB_DATABASE" value="rightmo_testing"/>
         <env name="DB_HOST" value="127.0.0.1"/>
-        <env name="DB_PORT" value="33078"/>
-        <env name="DB_USERNAME" value="root"/>
-        <env name="DB_PASSWORD" value="rightmo_test_local"/>
+        <env name="DB_PORT" value="33079"/>
+        <env name="DB_USERNAME" value="rightmo"/>
+        <env name="DB_PASSWORD" value="rightmo_local"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
