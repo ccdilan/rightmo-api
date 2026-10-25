@@ -106,3 +106,7 @@ New tests are PHPUnit classes. The existing two Pest starter tests remain; `php 
 Coverage includes login/revocation/expiry/throttling, route protection, CRUD, unique names and duplicate write races, validation, literal search, filters/sorting/pagination, multipart validation, rollback cleanup, cleanup failure, and concurrent image replacements. `composer test` runs formatting checks, PHPStan level 7, and the complete suite. PHP changes are formatted with `vendor/bin/pint --dirty --format agent`.
 
 GitHub Actions runs PHP 8.5 and MySQL 8.4, with PCOV line coverage required to reach 80%. The Docker test command enables PCOV; it is disabled for normal application requests. The [frontend repository](https://github.com/ccdilan/rightmo-web) has separate lint, TypeScript, test, and build checks plus an integration smoke test for the full Docker stack. Neither workflow deploys or publishes the application.
+
+## Engineering improvements
+
+The [shared engineering plan](https://github.com/ccdilan/rightmo-web/blob/main/ENGINEERING_PLAN.md) records the ordered search, UI/UX, accessibility, and performance work. API changes retain repository/service boundaries and land in focused Conventional Commits before the web features that consume them.
