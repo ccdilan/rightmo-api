@@ -48,7 +48,20 @@ Stop the Nginx container first if port 8080 is occupied. Start the frontend with
 
 ## API
 
-The [OpenAPI 3.1 specification](docs/openapi.json) documents every endpoint, schema, filter, status code, and multipart upload. Import it into Postman, Insomnia, or an OpenAPI viewer. API information is at `/`; health is at `/up`.
+Open the **[Scribe API documentation](http://localhost:8080/docs/)** for endpoint descriptions, example requests/responses, and **Try it out**. Log in through the authentication endpoint, then paste `data.token` into the Bearer token input for protected requests. Interactive writes operate on the shared catalog; the example token is intentionally invalid.
+
+Download the generated [OpenAPI 3.1 YAML](http://localhost:8080/docs/openapi.yaml), [OpenAPI JSON](http://localhost:8080/docs/openapi.json), or [Postman collection](http://localhost:8080/docs/collection.json). A reviewable copy of the [generated OpenAPI JSON](docs/openapi.json) is committed with the source. API information is at `/`; health is at `/up`.
+
+Scribe 5 is a development dependency. Documentation comes from controller docblocks, Form Request rules and parameter descriptions, and fixed JSON responses in `docs/responses/`. Generation never calls API endpoints, queries catalog data, or creates a real token. PUT and PATCH have separate route definitions pointing to the same service-backed controller method so their different validation requirements appear correctly.
+
+```sh
+# Native PHP: regenerate after endpoint or validation changes.
+composer docs
+# Docker: documentation is generated and copied into Nginx during the build.
+./bin/setup
+```
+
+The static site lives in ignored `public/docs/`; Scribe's intermediate `.scribe/` output is ignored too. Edit the source annotations/examples, not generated output. `composer docs` also updates `docs/openapi.json`. CI regenerates it and fails if the committed export is stale. No Laravel frontend build is needed. `SCRIBE_BASE_URL` defaults to `http://localhost:8080`; set it when generating docs for a different API origin (or pass `--build-arg SCRIBE_BASE_URL=https://api.example.com` to `docker compose build`).
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/auth/login \
@@ -87,7 +100,7 @@ A replacement is stored first. The service locks the product row, updates its im
 DB_PORT=33079 DB_USERNAME=rightmo DB_PASSWORD=rightmo_local composer test
 ```
 
-New tests are PHPUnit classes. The existing two Pest starter tests remain; `php artisan test` runs both styles. API tests use real MySQL queries and Laravel storage fakes. The concurrency test runs two PHP processes against an actual locked product row. Test boot refuses any database name that does not end in `_testing`, protecting the application database. Never point tests at production credentials.
+New tests are PHPUnit classes. The existing two Pest starter tests remain; `php artisan test` runs both styles. API tests use real MySQL queries and Laravel storage fakes. The concurrency test runs two PHP processes against an actual locked product row. The documentation test generates Scribe output in an isolated directory with the database unavailable and checks route coverage, authentication, PUT/PATCH semantics, query filters, response types, and uploads. Test boot refuses any database name that does not end in `_testing`, protecting the application database. Never point tests at production credentials.
 
 Coverage includes login/revocation/expiry/throttling, route protection, CRUD, unique names and duplicate write races, validation, literal search, filters/sorting/pagination, multipart validation, rollback cleanup, cleanup failure, and concurrent image replacements. `composer test` runs formatting checks, PHPStan level 7, and the complete suite. PHP changes are formatted with `vendor/bin/pint --dirty --format agent`.
 

@@ -10,3 +10,7 @@
 /public/build
 /database/*.sqlite*
 .phpunit.result.cache
+
+/.scribe
+/public/docs
+/.phpunit.cache

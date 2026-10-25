@@ -40,5 +40,7 @@ jobs:
           coverage: pcov
       - run: composer install --no-interaction --prefer-dist
       - run: cp .env.example .env && php artisan key:generate
+      - run: composer docs
+      - run: git diff --exit-code -- docs/openapi.json
       - run: composer test
       - run: php -d pcov.enabled=1 vendor/bin/pest --coverage --min=80

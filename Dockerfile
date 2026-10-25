@@ -7,6 +7,7 @@ RUN pecl install pcov-1.0.12 && docker-php-ext-enable pcov \
     && echo "pcov.enabled=0" > /usr/local/etc/php/conf.d/pcov-default.ini
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
+ARG SCRIBE_BASE_URL=http://localhost:8080
 COPY composer.json composer.lock ./
 RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader
 COPY . .
@@ -14,6 +15,7 @@ RUN composer dump-autoload --optimize --no-scripts \
     && php artisan package:discover --ansi \
     && mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs .phpunit.cache vendor/pestphp/pest-plugin-mutate/.temp vendor/pestphp/pest/.temp \
     && touch .env \
+    && SCRIBE_BASE_URL="$SCRIBE_BASE_URL" composer docs \
     && php artisan storage:link \
     && chown -R www-data:www-data storage bootstrap/cache .phpunit.cache vendor/pestphp/pest-plugin-mutate/.temp vendor/pestphp/pest/.temp
 COPY docker/php.ini /usr/local/etc/php/conf.d/rightmo.ini
@@ -22,4 +24,4 @@ CMD ["php-fpm"]
 
 FROM nginx:stable-alpine AS nginx
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY public /var/www/html/public
+COPY --from=app /var/www/html/public /var/www/html/public
