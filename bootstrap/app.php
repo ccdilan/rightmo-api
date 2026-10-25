@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\CategoryInUse;
+use App\Exceptions\DuplicateCategoryName;
 use App\Exceptions\DuplicateProductName;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -16,10 +18,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {})
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(fn (Request $request): bool => $request->is('api/*') || $request->expectsJson());
-        $exceptions->dontReport([DuplicateProductName::class]);
+        $exceptions->dontReport([DuplicateProductName::class, DuplicateCategoryName::class, CategoryInUse::class]);
         $exceptions->render(function (Throwable $exception, Request $request) {
             if (! $request->is('api/*')) {
                 return null;
+            }
+            if ($exception instanceof DuplicateCategoryName) {
+                return response()->json(['message' => 'A category with this name already exists.', 'errors' => ['name' => ['A category with this name already exists.']]], 422);
+            }
+            if ($exception instanceof CategoryInUse) {
+                return response()->json(['message' => 'This category contains products. Move or delete those products before deleting the category.'], 409);
             }
             if ($exception instanceof DuplicateProductName) {
                 return response()->json(['message' => 'A product with this name already exists.', 'errors' => ['name' => ['A product with this name already exists.']]], 422);

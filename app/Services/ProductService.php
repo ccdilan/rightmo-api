@@ -2,30 +2,21 @@
 
 namespace App\Services;
 
-use App\Contracts\CategoryRepository;
 use App\Contracts\ProductRepository;
 use App\Data\ProductData;
 use App\Data\ProductQuery;
-use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\DatabaseManager;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 final class ProductService
 {
-    public function __construct(private ProductRepository $products, private CategoryRepository $categories, private ProductImageService $images, private DatabaseManager $database) {}
+    public function __construct(private ProductRepository $products, private ProductImageService $images, private DatabaseManager $database) {}
 
     /** @return LengthAwarePaginator<int, Product> */
     public function list(ProductQuery $query): LengthAwarePaginator
     {
         return $this->products->paginate($query);
-    }
-
-    /** @return Collection<int, Category> */
-    public function categories(): Collection
-    {
-        return $this->categories->all();
     }
 
     public function find(int $id): Product

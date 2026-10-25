@@ -17,7 +17,7 @@
         },
         {
             "name": "Categories",
-            "description": "\nCategories are seeded and shared by all users."
+            "description": "\nAll authenticated users can manage shared categories. Only empty categories can be deleted."
         },
         {
             "name": "Products",
@@ -448,11 +448,553 @@
                 ]
             }
         },
+        "/api/v1/categories/{category}": {
+            "put": {
+                "summary": "Replace a category",
+                "operationId": "replaceACategory",
+                "description": "PUT requires name. PATCH preserves an omitted name. Existing product assignments remain intact.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Audio"
+                                                    ]
+                                                },
+                                                "products_count": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        6
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Audio",
+                                                "products_count": 6
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Resource not found."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Resource not found."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "A category with this name already exists."
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            "A category with this name already exists."
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "A category with this name already exists.",
+                                            "errors": {
+                                                "name": [
+                                                    "A category with this name already exists."
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Categories"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Trimmed, case-insensitively unique name, up to 120 characters. Required for POST/PUT; omitted PATCH names are preserved. Must not be greater than 120 characters.",
+                                        "examples": [
+                                            "Home office"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update a category",
+                "operationId": "updateACategory",
+                "description": "PUT requires name. PATCH preserves an omitted name. Existing product assignments remain intact.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Audio"
+                                                    ]
+                                                },
+                                                "products_count": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        6
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Audio",
+                                                "products_count": 6
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Resource not found."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Resource not found."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "A category with this name already exists."
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            "A category with this name already exists."
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "A category with this name already exists.",
+                                            "errors": {
+                                                "name": [
+                                                    "A category with this name already exists."
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Categories"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Trimmed, case-insensitively unique name, up to 120 characters. Required for POST/PUT; omitted PATCH names are preserved. Must not be greater than 120 characters.",
+                                        "examples": [
+                                            "Home office"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "Get a category",
+                "operationId": "getACategory",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Audio"
+                                                    ]
+                                                },
+                                                "products_count": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        6
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Audio",
+                                                "products_count": 6
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Resource not found."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Resource not found."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Categories"
+                ]
+            },
+            "delete": {
+                "summary": "Delete a category",
+                "operationId": "deleteACategory",
+                "description": "Only empty categories can be deleted. Move products to another category first.\nRow locking and the database foreign key prevent removal of a referenced category.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": [],
+                                    "examples": [
+                                        []
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Resource not found."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Resource not found."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "This category contains products. Move or delete those products before deleting the category."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "This category contains products. Move or delete those products before deleting the category."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Categories"
+                ]
+            },
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "category",
+                    "description": "Category ID.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "examples": [
+                            1
+                        ]
+                    }
+                }
+            ]
+        },
         "/api/v1/categories": {
             "get": {
                 "summary": "List categories",
                 "operationId": "listCategories",
-                "description": "Returns available categories ordered by name.",
+                "description": "Returns categories ordered by name, with current product counts.",
                 "parameters": [],
                 "responses": {
                     "200": {
@@ -478,6 +1020,12 @@
                                                         "examples": [
                                                             "Audio"
                                                         ]
+                                                    },
+                                                    "products_count": {
+                                                        "type": "integer",
+                                                        "examples": [
+                                                            6
+                                                        ]
                                                     }
                                                 }
                                             },
@@ -485,7 +1033,8 @@
                                                 [
                                                     {
                                                         "id": 1,
-                                                        "name": "Audio"
+                                                        "name": "Audio",
+                                                        "products_count": 6
                                                     }
                                                 ]
                                             ]
@@ -496,7 +1045,8 @@
                                             "data": [
                                                 {
                                                     "id": 1,
-                                                    "name": "Audio"
+                                                    "name": "Audio",
+                                                    "products_count": 6
                                                 }
                                             ]
                                         }
@@ -527,8 +1077,63 @@
                                 }
                             }
                         }
+                    }
+                },
+                "tags": [
+                    "Categories"
+                ]
+            },
+            "post": {
+                "summary": "Create a category",
+                "operationId": "createACategory",
+                "description": "Names are trimmed and case-insensitively unique.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Audio"
+                                                    ]
+                                                },
+                                                "products_count": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        6
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Audio",
+                                                "products_count": 6
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     },
-                    "500": {
+                    "401": {
                         "description": "",
                         "content": {
                             "application/json": {
@@ -538,13 +1143,57 @@
                                         "message": {
                                             "type": "string",
                                             "examples": [
-                                                "An unexpected error occurred. Please try again."
+                                                "Unauthenticated."
                                             ]
                                         }
                                     },
                                     "examples": [
                                         {
-                                            "message": "An unexpected error occurred. Please try again."
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "A category with this name already exists."
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            "A category with this name already exists."
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "A category with this name already exists.",
+                                            "errors": {
+                                                "name": [
+                                                    "A category with this name already exists."
+                                                ]
+                                            }
                                         }
                                     ]
                                 }
@@ -554,7 +1203,29 @@
                 },
                 "tags": [
                     "Categories"
-                ]
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Trimmed, case-insensitively unique name, up to 120 characters. Required for POST/PUT; omitted PATCH names are preserved. Must not be greater than 120 characters.",
+                                        "examples": [
+                                            "Home office"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ]
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/products": {

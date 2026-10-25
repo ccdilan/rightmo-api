@@ -38,7 +38,7 @@ class AuthApiTest extends TestCase
 
     public function test_all_catalog_endpoints_require_authentication(): void
     {
-        foreach ([['GET', '/products'], ['GET', '/products/1'], ['POST', '/products'], ['PATCH', '/products/1'], ['PUT', '/products/1'], ['DELETE', '/products/1'], ['POST', '/products/1/image'], ['GET', '/categories'], ['GET', '/auth/me'], ['POST', '/auth/logout']] as [$method,$path]) {
+        foreach ([['GET', '/products'], ['GET', '/products/1'], ['POST', '/products'], ['PATCH', '/products/1'], ['PUT', '/products/1'], ['DELETE', '/products/1'], ['POST', '/products/1/image'], ['GET', '/categories'], ['GET', '/categories/1'], ['POST', '/categories'], ['PUT', '/categories/1'], ['PATCH', '/categories/1'], ['DELETE', '/categories/1'], ['GET', '/auth/me'], ['POST', '/auth/logout']] as [$method,$path]) {
             $this->json($method, '/api/v1'.$path)->assertUnauthorized()->assertJsonStructure(['message']);
         }
         $this->withToken('not-a-token')->getJson('/api/v1/products')->assertUnauthorized();

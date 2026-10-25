@@ -11,7 +11,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
-        Route::get('categories', CategoryController::class)->name('categories.index');
+        Route::put('categories/{category}', [CategoryController::class, 'update'])->whereNumber('category')->name('categories.replace');
+        Route::patch('categories/{category}', [CategoryController::class, 'update'])->whereNumber('category')->name('categories.update');
+        Route::apiResource('categories', CategoryController::class)->except('update')->where(['category' => '[0-9]+']);
         Route::post('products/{product}/image', ProductImageController::class)->whereNumber('product')->name('products.image');
         Route::put('products/{product}', [ProductController::class, 'update'])->whereNumber('product')->name('products.replace');
         Route::patch('products/{product}', [ProductController::class, 'update'])->whereNumber('product')->name('products.update');

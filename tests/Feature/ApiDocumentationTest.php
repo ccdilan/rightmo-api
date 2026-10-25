@@ -38,6 +38,11 @@ class ApiDocumentationTest extends TestCase
             $this->assertSame('bearer', $spec['components']['securitySchemes']['default']['scheme']);
             $this->assertSame([['default' => []]], $spec['security']);
 
+            $category = $spec['paths']['/api/v1/categories/{category}'];
+            $this->assertSame(['name'], $category['put']['requestBody']['content']['application/json']['schema']['required']);
+            $this->assertEmpty($category['patch']['requestBody']['content']['application/json']['schema']['required'] ?? []);
+            $this->assertArrayHasKey('409', $category['delete']['responses']);
+            $this->assertArrayHasKey('products_count', $category['get']['responses']['200']['content']['application/json']['schema']['properties']['data']['properties']);
             $product = $spec['paths']['/api/v1/products/{product}'];
             $put = $product['put']['requestBody']['content']['application/json']['schema'];
             $patch = $product['patch']['requestBody']['content']['application/json']['schema'];

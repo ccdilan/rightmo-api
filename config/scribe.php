@@ -51,7 +51,7 @@ return [
     'last_updated' => 'Generated from the Rightmo API source',
     'examples' => ['faker_seed' => 1234, 'models_source' => []],
     'strategies' => [
-        'metadata' => [...Defaults::METADATA_STRATEGIES, Strategies\StaticData::withSettings(only: ['PUT api/v1/products/*'], data: ['title' => 'Replace a product'])],
+        'metadata' => [...Defaults::METADATA_STRATEGIES, Strategies\StaticData::withSettings(only: ['PUT api/v1/products/*'], data: ['title' => 'Replace a product']), Strategies\StaticData::withSettings(only: ['PUT api/v1/categories/*'], data: ['title' => 'Replace a category'])],
         'headers' => [...Defaults::HEADERS_STRATEGIES, Strategies\StaticData::withSettings(data: ['Accept' => 'application/json'])],
         'urlParameters' => Defaults::URL_PARAMETERS_STRATEGIES,
         'queryParameters' => Defaults::QUERY_PARAMETERS_STRATEGIES,

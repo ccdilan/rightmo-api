@@ -2,7 +2,8 @@
   "data": [
     {
       "id": 1,
-      "name": "Audio"
+      "name": "Audio",
+      "products_count": 6
     }
   ]
 }
