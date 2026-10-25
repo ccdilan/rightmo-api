@@ -70,6 +70,30 @@ class ProductApiTest extends TestCase
         $this->getJson('/api/v1/categories')->assertOk()->assertJsonFragment(['id' => $category->id, 'name' => $category->name]);
     }
 
+    public function test_multiple_categories_words_and_rating_combine_with_price_and_pagination(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $categories = Category::factory()->count(3)->create();
+        $first = Product::factory()->for($categories[0])->create(['name' => 'Wireless Studio Mini', 'price' => 60, 'rating' => 4.5]);
+        $second = Product::factory()->for($categories[1])->create(['name' => 'Studio Wireless Pro', 'price' => 60, 'rating' => 5]);
+        Product::factory()->for($categories[2])->create(['name' => 'Studio Wireless Elsewhere', 'price' => 60, 'rating' => 5]);
+        Product::factory()->for($categories[0])->create(['name' => 'Studio Wired', 'price' => 60, 'rating' => 5]);
+        Product::factory()->for($categories[1])->create(['name' => 'Studio Wireless Low', 'price' => 60, 'rating' => 3]);
+        Product::factory()->for($categories[0])->create(['name' => 'Studio Wireless Expensive', 'price' => 160, 'rating' => 5]);
+        $query = http_build_query(['search' => " WIRELESS \t studio ", 'category_ids' => [$categories[0]->id, $categories[1]->id], 'min_rating' => 4.5, 'min_price' => 50, 'max_price' => 100, 'sort_by' => 'price', 'sort_direction' => 'asc', 'per_page' => 1]);
+        $this->getJson('/api/v1/products?'.$query)->assertOk()->assertJsonPath('meta.total', 2)->assertJsonPath('data.0.id', $first->id);
+        $this->getJson('/api/v1/products?'.$query.'&page=2')->assertOk()->assertJsonPath('data.0.id', $second->id);
+        $this->getJson('/api/v1/products?category_id='.$categories[0]->id.'&min_rating=5')->assertOk()->assertJsonCount(2, 'data');
+    }
+
+    public function test_category_selection_rejects_conflicting_or_duplicate_ids(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $category = Category::factory()->create();
+        $this->getJson('/api/v1/products?'.http_build_query(['category_id' => $category->id, 'category_ids' => [$category->id]]))->assertUnprocessable()->assertJsonValidationErrors('category_id');
+        $this->getJson('/api/v1/products?'.http_build_query(['category_ids' => [$category->id, $category->id]]))->assertUnprocessable()->assertJsonValidationErrors('category_ids.0');
+    }
+
     public function test_search_treats_wildcards_and_sql_as_literal_text(): void
     {
         Sanctum::actingAs(User::factory()->create());
@@ -88,7 +112,7 @@ class ProductApiTest extends TestCase
 
     public static function invalidQueries(): array
     {
-        return [['min_price=100&max_price=20', 'max_price'], ['sort_by=password', 'sort_by'], ['sort_direction=sideways', 'sort_direction'], ['per_page=101', 'per_page'], ['page=0', 'page'], ['category_id=999999', 'category_id'], ['min_price=-1', 'min_price']];
+        return [['min_price=100&max_price=20', 'max_price'], ['sort_by=password', 'sort_by'], ['sort_direction=sideways', 'sort_direction'], ['per_page=101', 'per_page'], ['page=0', 'page'], ['category_id=999999', 'category_id'], ['min_price=-1', 'min_price'], ['min_rating=5.1', 'min_rating'], ['min_rating=-1', 'min_rating'], ['min_rating=4.55', 'min_rating'], ['category_ids=1', 'category_ids'], ['category_ids[]=999999', 'category_ids'], ['category_ids[a]=1', 'category_ids'], ['category_ids[][]=1', 'category_ids.0'], ['search=one+two+three+four+five+six+seven+eight+nine', 'search']];
     }
 
     public function test_invalid_product_values_are_rejected(): void

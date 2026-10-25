@@ -51,7 +51,7 @@ class ApiDocumentationTest extends TestCase
 
             $listing = $spec['paths']['/api/v1/products']['get'];
             $this->assertArrayNotHasKey('requestBody', $listing);
-            $this->assertEqualsCanonicalizing(['search', 'category_id', 'min_price', 'max_price', 'sort_by', 'sort_direction', 'page', 'per_page'], array_column($listing['parameters'], 'name'));
+            $this->assertEqualsCanonicalizing(['search', 'category_id', 'category_ids', 'min_rating', 'min_price', 'max_price', 'sort_by', 'sort_direction', 'page', 'per_page'], array_column($listing['parameters'], 'name'));
             $upload = $spec['paths']['/api/v1/products/{product}/image']['post']['requestBody']['content']['multipart/form-data']['schema'];
             $this->assertSame('binary', $upload['properties']['image']['format']);
             $this->assertSame(['image'], $upload['required']);

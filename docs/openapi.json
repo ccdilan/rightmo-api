@@ -561,19 +561,19 @@
             "get": {
                 "summary": "List products",
                 "operationId": "listProducts",
-                "description": "Combine literal, case-insensitive name search with category and price filters.\nDefault ordering is newest first. All sort orders include an ID tie-breaker.\nPagination defaults to 12 items; per_page is capped at 100.",
+                "description": "Combine name search words in any order with multiple categories, price bounds, and a minimum rating.\nEvery search word must match; selected categories match any of the provided IDs.\nDefault ordering is newest first. All sort orders include an ID tie-breaker.\nPagination defaults to 12 items; per_page is capped at 100.",
                 "parameters": [
                     {
                         "in": "query",
                         "name": "search",
-                        "description": "Case-insensitive literal name substring. Must not be greater than 160 characters.",
+                        "description": "All words must occur in the name, in any order (case insensitive). Up to 8 words; wildcard characters are literal. Must not be greater than 160 characters.",
                         "required": false,
                         "schema": {
                             "type": [
                                 "string",
                                 "null"
                             ],
-                            "description": "Case-insensitive literal name substring. Must not be greater than 160 characters.",
+                            "description": "All words must occur in the name, in any order (case insensitive). Up to 8 words; wildcard characters are literal. Must not be greater than 160 characters.",
                             "examples": [
                                 "studio"
                             ]
@@ -582,13 +582,44 @@
                     {
                         "in": "query",
                         "name": "category_id",
-                        "description": "ID from the categories endpoint. Must match an existing stored value.",
+                        "description": "Legacy single category ID. Do not combine with category_ids. Must match an existing stored value.",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "description": "ID from the categories endpoint. Must match an existing stored value.",
+                            "description": "Legacy single category ID. Do not combine with category_ids. Must match an existing stored value.",
                             "examples": [
                                 1
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "category_ids",
+                        "description": "Must be at least 1.",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "description": "Must be at least 1.",
+                            "items": {
+                                "type": "integer"
+                            },
+                            "examples": [
+                                [
+                                    16
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "min_rating",
+                        "description": "Inclusive minimum rating from 0 to 5, up to one decimal place. Must be between 0 and 5.",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "description": "Inclusive minimum rating from 0 to 5, up to one decimal place. Must be between 0 and 5.",
+                            "examples": [
+                                4
                             ]
                         }
                     },

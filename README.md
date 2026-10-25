@@ -110,3 +110,5 @@ GitHub Actions runs PHP 8.5 and MySQL 8.4, with PCOV line coverage required to r
 ## Engineering improvements
 
 The [shared engineering plan](https://github.com/ccdilan/rightmo-web/blob/main/ENGINEERING_PLAN.md) records the ordered search, UI/UX, accessibility, and performance work. API changes retain repository/service boundaries and land in focused Conventional Commits before the web features that consume them.
+
+Catalog discovery supports `category_ids[]=1&category_ids[]=2` (any selected category), `min_rating`, and up to eight search words that must all occur in the name in any order. Combine these with price bounds and sorting. The legacy `category_id` remains available; combining it with `category_ids` returns 422.

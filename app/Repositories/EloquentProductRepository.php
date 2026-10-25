@@ -16,12 +16,18 @@ final class EloquentProductRepository implements ProductRepository
     public function paginate(ProductQuery $query): LengthAwarePaginator
     {
         $builder = Product::query()->with('category');
-        if ($query->search !== null && $query->search !== '') {
-            $search = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $query->search);
+        foreach (array_unique(preg_split('/\s+/u', trim($query->search ?? ''), flags: PREG_SPLIT_NO_EMPTY) ?: []) as $term) {
+            $search = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
             $builder->whereRaw("name LIKE ? ESCAPE '!'", ['%'.$search.'%']);
         }
         if ($query->categoryId !== null) {
             $builder->where('category_id', $query->categoryId);
+        }
+        if ($query->categoryIds !== []) {
+            $builder->whereIn('category_id', $query->categoryIds);
+        }
+        if ($query->minRating !== null) {
+            $builder->where('rating', '>=', $query->minRating);
         }
         if ($query->minPrice !== null) {
             $builder->where('price', '>=', $query->minPrice);

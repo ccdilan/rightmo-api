@@ -28,7 +28,8 @@ class ProductController extends Controller
     /**
      * List products
      *
-     * Combine literal, case-insensitive name search with category and price filters.
+     * Combine name search words in any order with multiple categories, price bounds, and a minimum rating.
+     * Every search word must match; selected categories match any of the provided IDs.
      * Default ordering is newest first. All sort orders include an ID tie-breaker.
      * Pagination defaults to 12 items; per_page is capped at 100.
      *
