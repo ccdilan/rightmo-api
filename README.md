@@ -1,6 +1,6 @@
 # Rightmo API
 
-Laravel 13 product API with MySQL, Sanctum bearer tokens, focused services, and repositories behind contracts. The companion [Next.js frontend](https://github.com/ccdilan/rightmo-web) provides login, a responsive catalog, product details, and image replacement.
+Laravel 13 product API with MySQL, Sanctum bearer tokens, focused services, and repositories behind contracts. The companion [Next.js frontend](https://github.com/ccdilan/rightmo-web) provides login, a responsive catalog, product creation/editing/deletion, product details, and image replacement. All authenticated users can manage the shared catalog; the web interface confirms deletion and displays API validation errors inline.
 
 ## Run the complete application
 
