@@ -26,4 +26,19 @@ class ProductIndexRequest extends FormRequest
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ];
     }
+
+    /** @return array<string, array{description: string, example?: string|int|float}> */
+    public function queryParameters(): array
+    {
+        return [
+            'search' => ['description' => 'Case-insensitive literal name substring.', 'example' => 'studio'],
+            'category_id' => ['description' => 'ID from the categories endpoint.', 'example' => 1],
+            'min_price' => ['description' => 'Inclusive minimum price (nonnegative, up to two decimal places).', 'example' => '25.00'],
+            'max_price' => ['description' => 'Inclusive maximum price; must be greater than or equal to min_price.', 'example' => '200.00'],
+            'sort_by' => ['description' => 'Sort by price or rating. Omit for newest first.', 'example' => 'price'],
+            'sort_direction' => ['description' => 'Ascending or descending, defaults to desc. ID breaks ties.', 'example' => 'asc'],
+            'page' => ['description' => 'Page number, starting at 1.', 'example' => 1],
+            'per_page' => ['description' => 'Items per page, 1–100; defaults to 12.', 'example' => 12],
+        ];
+    }
 }

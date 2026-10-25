@@ -1,982 +1,2538 @@
 {
-  "openapi": "3.1.0",
-  "info": {
-    "title": "Rightmo API",
-    "version": "1.0.0",
-    "description": "Shared product catalog. All signed-in users may modify any product. Images are public assets; product APIs are protected."
-  },
-  "servers": [
-    {
-      "url": "http://localhost:8080/api/v1",
-      "description": "Local Docker setup"
-    }
-  ],
-  "security": [
-    {
-      "bearerAuth": []
-    }
-  ],
-  "paths": {
-    "/auth/login": {
-      "post": {
-        "operationId": "login",
-        "tags": [
-          "Authentication"
-        ],
-        "security": [],
-        "summary": "Sign in and issue an eight-hour bearer token",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "email",
-                  "password"
-                ],
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "maxLength": 255
-                  },
-                  "password": {
-                    "type": "string",
-                    "maxLength": 1024
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "user": {
-                          "$ref": "#/components/schemas/User"
-                        },
-                        "token": {
-                          "type": "string"
-                        },
-                        "token_type": {
-                          "const": "Bearer"
-                        },
-                        "expires_at": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "422": {
-            "$ref": "#/components/responses/422"
-          },
-          "429": {
-            "$ref": "#/components/responses/429"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      }
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Rightmo API",
+        "description": "Version 1 of the shared Rightmo product catalog. All authenticated users have equal access.",
+        "version": "1.0.0"
     },
-    "/auth/me": {
-      "get": {
-        "operationId": "me",
-        "tags": [
-          "Authentication"
-        ],
-        "summary": "Current user",
-        "responses": {
-          "200": {
-            "description": "Authenticated user",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/User"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      }
-    },
-    "/auth/logout": {
-      "post": {
-        "operationId": "logout",
-        "tags": [
-          "Authentication"
-        ],
-        "summary": "Revoke the current token",
-        "responses": {
-          "204": {
-            "description": "Token revoked"
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      }
-    },
-    "/categories": {
-      "get": {
-        "operationId": "categories",
-        "tags": [
-          "Catalog"
-        ],
-        "summary": "List seeded categories alphabetically",
-        "responses": {
-          "200": {
-            "description": "Categories",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Category"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      }
-    },
-    "/products": {
-      "get": {
-        "operationId": "listProducts",
-        "tags": [
-          "Catalog"
-        ],
-        "summary": "Search, filter, sort and paginate products",
-        "parameters": [
-          {
-            "name": "search",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "maxLength": 160
-            },
-            "description": "Literal case-insensitive product name substring."
-          },
-          {
-            "name": "category_id",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "description": "An existing category ID."
-          },
-          {
-            "name": "min_price",
-            "in": "query",
-            "schema": {
-              "type": "number",
-              "minimum": 0
-            },
-            "description": "Inclusive minimum price."
-          },
-          {
-            "name": "max_price",
-            "in": "query",
-            "schema": {
-              "type": "number",
-              "minimum": 0
-            },
-            "description": "Inclusive maximum; must be at least min_price."
-          },
-          {
-            "name": "sort_by",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "price",
-                "rating"
-              ]
-            },
-            "description": "If omitted, newest first. All sorts use an ID tie-breaker."
-          },
-          {
-            "name": "sort_direction",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "default": "desc"
-            },
-            "description": "Sort direction."
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 1000000,
-              "default": 1
-            },
-            "description": "Page number."
-          },
-          {
-            "name": "per_page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 12
-            },
-            "description": "Results per page."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Product page",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data",
-                    "meta",
-                    "links"
-                  ],
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Product"
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "current_page": {
-                          "type": "integer"
-                        },
-                        "last_page": {
-                          "type": "integer"
-                        },
-                        "per_page": {
-                          "type": "integer"
-                        },
-                        "total": {
-                          "type": "integer"
-                        }
-                      }
-                    },
-                    "links": {
-                      "type": "object",
-                      "properties": {
-                        "first": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "last": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "prev": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "next": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "422": {
-            "$ref": "#/components/responses/422"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      },
-      "post": {
-        "operationId": "createProduct",
-        "tags": [
-          "Catalog"
-        ],
-        "summary": "Create a product",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Product"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "422": {
-            "$ref": "#/components/responses/422"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      }
-    },
-    "/products/{id}": {
-      "parameters": [
+    "servers": [
         {
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "minimum": 1
-          }
+            "url": "http://localhost:8080"
         }
-      ],
-      "get": {
-        "operationId": "getProduct",
-        "tags": [
-          "Catalog"
-        ],
-        "summary": "Product details",
-        "responses": {
-          "200": {
-            "description": "Product",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Product"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      },
-      "delete": {
-        "operationId": "deleteProduct",
-        "tags": [
-          "Catalog"
-        ],
-        "summary": "Delete product and clean up its image after commit",
-        "responses": {
-          "204": {
-            "description": "Deleted"
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      },
-      "put": {
-        "operationId": "putProduct",
-        "tags": [
-          "Catalog"
-        ],
-        "summary": "Replace all editable fields; description must be present (nullable)",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductReplace"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Product"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          },
-          "422": {
-            "$ref": "#/components/responses/422"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      },
-      "patch": {
-        "operationId": "patchProduct",
-        "tags": [
-          "Catalog"
-        ],
-        "summary": "Update provided editable fields only",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductPatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Product"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          },
-          "422": {
-            "$ref": "#/components/responses/422"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      }
-    },
-    "/products/{id}/image": {
-      "parameters": [
+    ],
+    "tags": [
         {
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "minimum": 1
-          }
-        }
-      ],
-      "post": {
-        "operationId": "replaceProductImage",
-        "tags": [
-          "Images"
-        ],
-        "summary": "Upload or replace a product image",
-        "description": "JPEG, PNG, WebP only; maximum 5 MiB and 10000 \u00d7 10000 pixels. Generated filenames. Old image removed after commit.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "image"
-                ],
-                "properties": {
-                  "image": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              }
-            }
-          }
+            "name": "Authentication",
+            "description": "\nIssue, inspect, and revoke eight-hour Sanctum bearer tokens."
         },
-        "responses": {
-          "200": {
-            "description": "Product with updated image URL",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Product"
+        {
+            "name": "Categories",
+            "description": "\nCategories are seeded and shared by all users."
+        },
+        {
+            "name": "Products",
+            "description": "\nAll authenticated users can read and modify the shared catalog."
+        },
+        {
+            "name": "Product images",
+            "description": "\nOne public image per product. Product data endpoints still require authentication."
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "default": {
+                "type": "http",
+                "scheme": "bearer",
+                "description": "Call POST /api/v1/auth/login to obtain data.token. Send it in the Authorization header. This API uses Sanctum bearer tokens, not cookie/CSRF authentication. The Next.js application separately keeps its token in an HttpOnly cookie."
+            }
+        }
+    },
+    "security": [
+        {
+            "default": []
+        }
+    ],
+    "paths": {
+        "/api/v1/auth/login": {
+            "post": {
+                "summary": "Log in",
+                "operationId": "logIn",
+                "description": "Returns a new token. Invalid credentials return 401. Login is limited to five attempts per email/IP and 60 per IP each minute.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "user": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "examples": [
+                                                                1
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "examples": [
+                                                                "Alex Morgan"
+                                                            ]
+                                                        },
+                                                        "email": {
+                                                            "type": "string",
+                                                            "examples": [
+                                                                "demo@rightmo.test"
+                                                            ]
+                                                        }
+                                                    }
+                                                },
+                                                "token": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "1|EXAMPLE_TOKEN_NOT_VALID"
+                                                    ]
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Bearer"
+                                                    ]
+                                                },
+                                                "expires_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T08:00:00+00:00"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "user": {
+                                                    "id": 1,
+                                                    "name": "Alex Morgan",
+                                                    "email": "demo@rightmo.test"
+                                                },
+                                                "token": "1|EXAMPLE_TOKEN_NOT_VALID",
+                                                "token_type": "Bearer",
+                                                "expires_at": "2026-01-01T08:00:00+00:00"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "The email or password is incorrect."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "The email or password is incorrect."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "The email field must be a valid email address."
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "email": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            "The email field must be a valid email address."
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "The email field must be a valid email address.",
+                                            "errors": {
+                                                "email": [
+                                                    "The email field must be a valid email address."
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Too many requests. Please try again shortly."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Too many requests. Please try again shortly."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     }
-                  }
-                }
-              }
+                },
+                "tags": [
+                    "Authentication"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email address of an existing account. Must be a valid email address. Must not be greater than 255 characters.",
+                                        "examples": [
+                                            "demo@rightmo.test"
+                                        ]
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Account password. Local demo only; explicitly seed DemoSeeder first. Must not be greater than 1024 characters.",
+                                        "examples": [
+                                            "RightmoDemo!2026"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "email",
+                                    "password"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "security": []
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          },
-          "413": {
-            "$ref": "#/components/responses/413"
-          },
-          "422": {
-            "$ref": "#/components/responses/422"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "description": "Sanctum opaque token; expires after eight hours."
-      }
-    },
-    "schemas": {
-      "Error": {
-        "type": "object",
-        "required": [
-          "message"
-        ],
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "errors": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      },
-      "User": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "email"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer"
-          },
-          "name": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string",
-            "format": "email"
-          }
-        }
-      },
-      "Category": {
-        "type": "object",
-        "required": [
-          "id",
-          "name"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer"
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "Product": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "description",
-          "category",
-          "price",
-          "rating",
-          "image_url",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "category": {
-            "$ref": "#/components/schemas/Category"
-          },
-          "price": {
-            "type": "string",
-            "example": "129.00"
-          },
-          "rating": {
-            "type": "number",
-            "example": 4.8
-          },
-          "image_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uri"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "ProductWrite": {
-        "type": "object",
-        "required": [
-          "name",
-          "category_id",
-          "price",
-          "rating"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 160,
-            "description": "Trimmed; case-insensitively unique."
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 10000
-          },
-          "category_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "price": {
-            "oneOf": [
-              {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 9999999999.99,
-                "multipleOf": 0.01
-              },
-              {
-                "type": "string",
-                "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
-              }
-            ]
-          },
-          "rating": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 5,
-            "multipleOf": 0.1
-          }
-        }
-      },
-      "ProductReplace": {
-        "type": "object",
-        "required": [
-          "name",
-          "category_id",
-          "price",
-          "rating",
-          "description"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 160,
-            "description": "Trimmed; case-insensitively unique."
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 10000
-          },
-          "category_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "price": {
-            "oneOf": [
-              {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 9999999999.99,
-                "multipleOf": 0.01
-              },
-              {
-                "type": "string",
-                "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
-              }
-            ]
-          },
-          "rating": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 5,
-            "multipleOf": 0.1
-          }
-        }
-      },
-      "ProductPatch": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 160,
-            "description": "Trimmed; case-insensitively unique."
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 10000
-          },
-          "category_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "price": {
-            "oneOf": [
-              {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 9999999999.99,
-                "multipleOf": 0.01
-              },
-              {
-                "type": "string",
-                "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
-              }
-            ]
-          },
-          "rating": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 5,
-            "multipleOf": 0.1
-          }
-        }
-      }
-    },
-    "responses": {
-      "401": {
-        "description": "Missing, invalid or expired credentials",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "404": {
-        "description": "Resource not found",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "413": {
-        "description": "Request body exceeds upload limit",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "422": {
-        "description": "Invalid input or duplicate product name",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "429": {
-        "description": "Login rate limit exceeded",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
         },
-        "headers": {
-          "Retry-After": {
-            "description": "Seconds until retry",
-            "schema": {
-              "type": "integer"
+        "/api/v1/auth/me": {
+            "get": {
+                "summary": "Get the current user",
+                "operationId": "getTheCurrentUser",
+                "description": "Returns the user associated with the supplied token.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Alex Morgan"
+                                                    ]
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "demo@rightmo.test"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Alex Morgan",
+                                                "email": "demo@rightmo.test"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Authentication"
+                ]
             }
-          }
-        }
-      },
-      "500": {
-        "description": "Unexpected server error; details are not exposed",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "summary": "Log out",
+                "operationId": "logOut",
+                "description": "Revokes only the supplied token. Other active tokens remain valid.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": [],
+                                    "examples": [
+                                        []
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Authentication"
+                ]
             }
-          }
+        },
+        "/api/v1/categories": {
+            "get": {
+                "summary": "List categories",
+                "operationId": "listCategories",
+                "description": "Returns available categories ordered by name.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "examples": [
+                                                            1
+                                                        ]
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "examples": [
+                                                            "Audio"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "examples": [
+                                                [
+                                                    {
+                                                        "id": 1,
+                                                        "name": "Audio"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": [
+                                                {
+                                                    "id": 1,
+                                                    "name": "Audio"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Categories"
+                ]
+            }
+        },
+        "/api/v1/products": {
+            "get": {
+                "summary": "List products",
+                "operationId": "listProducts",
+                "description": "Combine literal, case-insensitive name search with category and price filters.\nDefault ordering is newest first. All sort orders include an ID tie-breaker.\nPagination defaults to 12 items; per_page is capped at 100.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "search",
+                        "description": "Case-insensitive literal name substring. Must not be greater than 160 characters.",
+                        "required": false,
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "description": "Case-insensitive literal name substring. Must not be greater than 160 characters.",
+                            "examples": [
+                                "studio"
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "category_id",
+                        "description": "ID from the categories endpoint. Must match an existing stored value.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "description": "ID from the categories endpoint. Must match an existing stored value.",
+                            "examples": [
+                                1
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "min_price",
+                        "description": "Inclusive minimum price (nonnegative, up to two decimal places). Must be at least 0. Must not be greater than 9999999999.99.",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "description": "Inclusive minimum price (nonnegative, up to two decimal places). Must be at least 0. Must not be greater than 9999999999.99.",
+                            "examples": [
+                                25
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "max_price",
+                        "description": "Inclusive maximum price; must be greater than or equal to min_price. Must be at least 0. Must not be greater than 9999999999.99.",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "description": "Inclusive maximum price; must be greater than or equal to min_price. Must be at least 0. Must not be greater than 9999999999.99.",
+                            "examples": [
+                                200
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "sort_by",
+                        "description": "Sort by price or rating. Omit for newest first.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "description": "Sort by price or rating. Omit for newest first.",
+                            "enum": [
+                                "price",
+                                "rating"
+                            ],
+                            "examples": [
+                                "price"
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "sort_direction",
+                        "description": "Ascending or descending, defaults to desc. ID breaks ties.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "description": "Ascending or descending, defaults to desc. ID breaks ties.",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ],
+                            "examples": [
+                                "asc"
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "description": "Page number, starting at 1. Must be at least 1. Must not be greater than 1000000.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "description": "Page number, starting at 1. Must be at least 1. Must not be greater than 1000000.",
+                            "examples": [
+                                1
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "per_page",
+                        "description": "Items per page, 1\u2013100; defaults to 12. Must be at least 1. Must not be greater than 100.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "description": "Items per page, 1\u2013100; defaults to 12. Must be at least 1. Must not be greater than 100.",
+                            "examples": [
+                                12
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "description": "Products on the current page.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "examples": [
+                                                            1
+                                                        ]
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "examples": [
+                                                            "Studio Wireless Headphones"
+                                                        ]
+                                                    },
+                                                    "description": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ],
+                                                        "description": "Product description, or null.",
+                                                        "examples": [
+                                                            "Comfortable wireless headphones for everyday listening."
+                                                        ]
+                                                    },
+                                                    "category": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "examples": [
+                                                                    1
+                                                                ]
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "examples": [
+                                                                    "Audio"
+                                                                ]
+                                                            }
+                                                        }
+                                                    },
+                                                    "price": {
+                                                        "type": "string",
+                                                        "description": "Nonnegative decimal string with two places.",
+                                                        "examples": [
+                                                            "129.00"
+                                                        ]
+                                                    },
+                                                    "rating": {
+                                                        "type": "number",
+                                                        "examples": [
+                                                            4.8
+                                                        ]
+                                                    },
+                                                    "image_url": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ],
+                                                        "description": "Public image URL, or null.",
+                                                        "examples": [
+                                                            null
+                                                        ]
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "examples": [
+                                                            "2026-01-01T00:00:00.000000Z"
+                                                        ]
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string",
+                                                        "examples": [
+                                                            "2026-01-01T00:00:00.000000Z"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "description",
+                                                    "price",
+                                                    "image_url"
+                                                ]
+                                            },
+                                            "examples": [
+                                                [
+                                                    {
+                                                        "id": 1,
+                                                        "name": "Studio Wireless Headphones",
+                                                        "description": "Comfortable wireless headphones for everyday listening.",
+                                                        "category": {
+                                                            "id": 1,
+                                                            "name": "Audio"
+                                                        },
+                                                        "price": "129.00",
+                                                        "rating": 4.8,
+                                                        "image_url": null,
+                                                        "created_at": "2026-01-01T00:00:00.000000Z",
+                                                        "updated_at": "2026-01-01T00:00:00.000000Z"
+                                                    }
+                                                ]
+                                            ]
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "http://localhost:8080/api/v1/products?page=1"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "http://localhost:8080/api/v1/products?page=1"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "examples": [
+                                                        null
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "examples": [
+                                                        null
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ],
+                                                                "examples": [
+                                                                    null
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string",
+                                                                "examples": [
+                                                                    "&laquo; Previous"
+                                                                ]
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean",
+                                                                "examples": [
+                                                                    false
+                                                                ]
+                                                            }
+                                                        }
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            {
+                                                                "url": null,
+                                                                "label": "&laquo; Previous",
+                                                                "active": false
+                                                            },
+                                                            {
+                                                                "url": "http://localhost:8080/api/v1/products?page=1",
+                                                                "label": "1",
+                                                                "active": true
+                                                            },
+                                                            {
+                                                                "url": null,
+                                                                "label": "Next &raquo;",
+                                                                "active": false
+                                                            }
+                                                        ]
+                                                    ]
+                                                },
+                                                "path": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "http://localhost:8080/api/v1/products"
+                                                    ]
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        12
+                                                    ]
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ],
+                                    "examples": [
+                                        {
+                                            "data": [
+                                                {
+                                                    "id": 1,
+                                                    "name": "Studio Wireless Headphones",
+                                                    "description": "Comfortable wireless headphones for everyday listening.",
+                                                    "category": {
+                                                        "id": 1,
+                                                        "name": "Audio"
+                                                    },
+                                                    "price": "129.00",
+                                                    "rating": 4.8,
+                                                    "image_url": null,
+                                                    "created_at": "2026-01-01T00:00:00.000000Z",
+                                                    "updated_at": "2026-01-01T00:00:00.000000Z"
+                                                }
+                                            ],
+                                            "links": {
+                                                "first": "http://localhost:8080/api/v1/products?page=1",
+                                                "last": "http://localhost:8080/api/v1/products?page=1",
+                                                "prev": null,
+                                                "next": null
+                                            },
+                                            "meta": {
+                                                "current_page": 1,
+                                                "from": 1,
+                                                "last_page": 1,
+                                                "links": [
+                                                    {
+                                                        "url": null,
+                                                        "label": "&laquo; Previous",
+                                                        "active": false
+                                                    },
+                                                    {
+                                                        "url": "http://localhost:8080/api/v1/products?page=1",
+                                                        "label": "1",
+                                                        "active": true
+                                                    },
+                                                    {
+                                                        "url": null,
+                                                        "label": "Next &raquo;",
+                                                        "active": false
+                                                    }
+                                                ],
+                                                "path": "http://localhost:8080/api/v1/products",
+                                                "per_page": 12,
+                                                "to": 1,
+                                                "total": 1
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "The max price field must be greater than or equal to min price."
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "max_price": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            "The max price field must be greater than or equal to min price."
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "The max price field must be greater than or equal to min price.",
+                                            "errors": {
+                                                "max_price": [
+                                                    "The max price field must be greater than or equal to min price."
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Products"
+                ]
+            },
+            "post": {
+                "summary": "Create a product",
+                "operationId": "createAProduct",
+                "description": "Names are trimmed and must be unique without regard to case.\nUpload an image separately after creating the product.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Studio Wireless Headphones"
+                                                    ]
+                                                },
+                                                "description": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Product description, or null.",
+                                                    "examples": [
+                                                        "Comfortable wireless headphones for everyday listening."
+                                                    ]
+                                                },
+                                                "category": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "examples": [
+                                                                1
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "examples": [
+                                                                "Audio"
+                                                            ]
+                                                        }
+                                                    }
+                                                },
+                                                "price": {
+                                                    "type": "string",
+                                                    "description": "Nonnegative decimal string with two places.",
+                                                    "examples": [
+                                                        "129.00"
+                                                    ]
+                                                },
+                                                "rating": {
+                                                    "type": "number",
+                                                    "examples": [
+                                                        4.8
+                                                    ]
+                                                },
+                                                "image_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Public image URL, or null. Storage paths are never exposed.",
+                                                    "examples": [
+                                                        null
+                                                    ]
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "description",
+                                                "price",
+                                                "image_url"
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Studio Wireless Headphones",
+                                                "description": "Comfortable wireless headphones for everyday listening.",
+                                                "category": {
+                                                    "id": 1,
+                                                    "name": "Audio"
+                                                },
+                                                "price": "129.00",
+                                                "rating": 4.8,
+                                                "image_url": null,
+                                                "created_at": "2026-01-01T00:00:00.000000Z",
+                                                "updated_at": "2026-01-01T00:00:00.000000Z"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "A product with this name already exists."
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            "A product with this name already exists."
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "A product with this name already exists.",
+                                            "errors": {
+                                                "name": [
+                                                    "A product with this name already exists."
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Products"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Trimmed, case-insensitively unique name (up to 160 characters). Must not be greater than 160 characters.",
+                                        "examples": [
+                                            "Studio Wireless Headphones"
+                                        ]
+                                    },
+                                    "description": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "Description, or null; required as a key for PUT. Must not be greater than 10000 characters.",
+                                        "examples": [
+                                            "Comfortable wireless headphones for everyday listening."
+                                        ]
+                                    },
+                                    "category_id": {
+                                        "type": "integer",
+                                        "description": "ID from the categories endpoint. Must match an existing stored value.",
+                                        "examples": [
+                                            1
+                                        ]
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "description": "Nonnegative decimal, at most two places, up to 9999999999.99. Responses return a decimal string. Must be at least 0. Must not be greater than 9999999999.99.",
+                                        "examples": [
+                                            129
+                                        ]
+                                    },
+                                    "rating": {
+                                        "type": "number",
+                                        "description": "Rating between 0 and 5, at most one decimal place. Must be between 0 and 5.",
+                                        "examples": [
+                                            4.8
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "category_id",
+                                    "price",
+                                    "rating"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/products/{product}": {
+            "get": {
+                "summary": "Get a product",
+                "operationId": "getAProduct",
+                "description": "Returns full details with its category and a public image URL.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Studio Wireless Headphones"
+                                                    ]
+                                                },
+                                                "description": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Product description, or null.",
+                                                    "examples": [
+                                                        "Comfortable wireless headphones for everyday listening."
+                                                    ]
+                                                },
+                                                "category": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "examples": [
+                                                                1
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "examples": [
+                                                                "Audio"
+                                                            ]
+                                                        }
+                                                    }
+                                                },
+                                                "price": {
+                                                    "type": "string",
+                                                    "description": "Nonnegative decimal string with two places.",
+                                                    "examples": [
+                                                        "129.00"
+                                                    ]
+                                                },
+                                                "rating": {
+                                                    "type": "number",
+                                                    "examples": [
+                                                        4.8
+                                                    ]
+                                                },
+                                                "image_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Public image URL, or null. Storage paths are never exposed.",
+                                                    "examples": [
+                                                        null
+                                                    ]
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "description",
+                                                "price",
+                                                "image_url"
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Studio Wireless Headphones",
+                                                "description": "Comfortable wireless headphones for everyday listening.",
+                                                "category": {
+                                                    "id": 1,
+                                                    "name": "Audio"
+                                                },
+                                                "price": "129.00",
+                                                "rating": 4.8,
+                                                "image_url": null,
+                                                "created_at": "2026-01-01T00:00:00.000000Z",
+                                                "updated_at": "2026-01-01T00:00:00.000000Z"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Resource not found."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Resource not found."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Products"
+                ]
+            },
+            "put": {
+                "summary": "Replace a product",
+                "operationId": "replaceAProduct",
+                "description": "PUT replaces all editable fields and requires name, description (which may be null), category_id, price, and rating.\nPATCH accepts any subset and preserves omitted fields. Unchanged names are valid.\nImages are updated through the dedicated image endpoint.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Studio Wireless Headphones"
+                                                    ]
+                                                },
+                                                "description": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Product description, or null.",
+                                                    "examples": [
+                                                        "Comfortable wireless headphones for everyday listening."
+                                                    ]
+                                                },
+                                                "category": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "examples": [
+                                                                1
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "examples": [
+                                                                "Audio"
+                                                            ]
+                                                        }
+                                                    }
+                                                },
+                                                "price": {
+                                                    "type": "string",
+                                                    "description": "Nonnegative decimal string with two places.",
+                                                    "examples": [
+                                                        "129.00"
+                                                    ]
+                                                },
+                                                "rating": {
+                                                    "type": "number",
+                                                    "examples": [
+                                                        4.8
+                                                    ]
+                                                },
+                                                "image_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Public image URL, or null. Storage paths are never exposed.",
+                                                    "examples": [
+                                                        null
+                                                    ]
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "description",
+                                                "price",
+                                                "image_url"
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Studio Wireless Headphones",
+                                                "description": "Comfortable wireless headphones for everyday listening.",
+                                                "category": {
+                                                    "id": 1,
+                                                    "name": "Audio"
+                                                },
+                                                "price": "129.00",
+                                                "rating": 4.8,
+                                                "image_url": null,
+                                                "created_at": "2026-01-01T00:00:00.000000Z",
+                                                "updated_at": "2026-01-01T00:00:00.000000Z"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Resource not found."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Resource not found."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "A product with this name already exists."
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            "A product with this name already exists."
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "A product with this name already exists.",
+                                            "errors": {
+                                                "name": [
+                                                    "A product with this name already exists."
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Products"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Trimmed, case-insensitively unique name (up to 160 characters). Must not be greater than 160 characters.",
+                                        "examples": [
+                                            "Studio Wireless Headphones"
+                                        ]
+                                    },
+                                    "description": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "Description, or null; required as a key for PUT. Must not be greater than 10000 characters.",
+                                        "examples": [
+                                            "Comfortable wireless headphones for everyday listening."
+                                        ]
+                                    },
+                                    "category_id": {
+                                        "type": "integer",
+                                        "description": "ID from the categories endpoint. Must match an existing stored value.",
+                                        "examples": [
+                                            1
+                                        ]
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "description": "Nonnegative decimal, at most two places, up to 9999999999.99. Responses return a decimal string. Must be at least 0. Must not be greater than 9999999999.99.",
+                                        "examples": [
+                                            129
+                                        ]
+                                    },
+                                    "rating": {
+                                        "type": "number",
+                                        "description": "Rating between 0 and 5, at most one decimal place. Must be between 0 and 5.",
+                                        "examples": [
+                                            4.8
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "description",
+                                    "category_id",
+                                    "price",
+                                    "rating"
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update a product",
+                "operationId": "updateAProduct",
+                "description": "PUT replaces all editable fields and requires name, description (which may be null), category_id, price, and rating.\nPATCH accepts any subset and preserves omitted fields. Unchanged names are valid.\nImages are updated through the dedicated image endpoint.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Studio Wireless Headphones"
+                                                    ]
+                                                },
+                                                "description": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Product description, or null.",
+                                                    "examples": [
+                                                        "Comfortable wireless headphones for everyday listening."
+                                                    ]
+                                                },
+                                                "category": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "examples": [
+                                                                1
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "examples": [
+                                                                "Audio"
+                                                            ]
+                                                        }
+                                                    }
+                                                },
+                                                "price": {
+                                                    "type": "string",
+                                                    "description": "Nonnegative decimal string with two places.",
+                                                    "examples": [
+                                                        "129.00"
+                                                    ]
+                                                },
+                                                "rating": {
+                                                    "type": "number",
+                                                    "examples": [
+                                                        4.8
+                                                    ]
+                                                },
+                                                "image_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Public image URL, or null. Storage paths are never exposed.",
+                                                    "examples": [
+                                                        null
+                                                    ]
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "description",
+                                                "price",
+                                                "image_url"
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Studio Wireless Headphones",
+                                                "description": "Comfortable wireless headphones for everyday listening.",
+                                                "category": {
+                                                    "id": 1,
+                                                    "name": "Audio"
+                                                },
+                                                "price": "129.00",
+                                                "rating": 4.8,
+                                                "image_url": null,
+                                                "created_at": "2026-01-01T00:00:00.000000Z",
+                                                "updated_at": "2026-01-01T00:00:00.000000Z"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Resource not found."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Resource not found."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "A product with this name already exists."
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            "A product with this name already exists."
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "A product with this name already exists.",
+                                            "errors": {
+                                                "name": [
+                                                    "A product with this name already exists."
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Products"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Trimmed, case-insensitively unique name (up to 160 characters). Must not be greater than 160 characters.",
+                                        "examples": [
+                                            "Studio Wireless Headphones"
+                                        ]
+                                    },
+                                    "description": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "Description, or null; required as a key for PUT. Must not be greater than 10000 characters.",
+                                        "examples": [
+                                            "Comfortable wireless headphones for everyday listening."
+                                        ]
+                                    },
+                                    "category_id": {
+                                        "type": "integer",
+                                        "description": "ID from the categories endpoint. Must match an existing stored value.",
+                                        "examples": [
+                                            1
+                                        ]
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "description": "Nonnegative decimal, at most two places, up to 9999999999.99. Responses return a decimal string. Must be at least 0. Must not be greater than 9999999999.99.",
+                                        "examples": [
+                                            129
+                                        ]
+                                    },
+                                    "rating": {
+                                        "type": "number",
+                                        "description": "Rating between 0 and 5, at most one decimal place. Must be between 0 and 5.",
+                                        "examples": [
+                                            4.8
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete a product",
+                "operationId": "deleteAProduct",
+                "description": "Deletes the product and cleans up its image after the database transaction commits.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": [],
+                                    "examples": [
+                                        []
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Resource not found."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Resource not found."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Products"
+                ]
+            },
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "product",
+                    "description": "Product ID.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "examples": [
+                            1
+                        ]
+                    }
+                }
+            ]
+        },
+        "/api/v1/products/{product}/image": {
+            "post": {
+                "summary": "Upload or replace an image",
+                "operationId": "uploadOrReplaceAnImage",
+                "description": "Send multipart/form-data containing image. JPEG, PNG, and WebP content is accepted up to 5 MiB and 10,000 \u00d7 10,000 pixels.\nThe replacement uses a generated filename. Failed persistence removes the new file; the previous image is deleted after commit.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "examples": [
+                                                        1
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "Studio Wireless Headphones"
+                                                    ]
+                                                },
+                                                "description": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Product description, or null.",
+                                                    "examples": [
+                                                        "Comfortable wireless headphones for everyday listening."
+                                                    ]
+                                                },
+                                                "category": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "examples": [
+                                                                1
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "examples": [
+                                                                "Audio"
+                                                            ]
+                                                        }
+                                                    }
+                                                },
+                                                "price": {
+                                                    "type": "string",
+                                                    "description": "Nonnegative decimal string with two places.",
+                                                    "examples": [
+                                                        "129.00"
+                                                    ]
+                                                },
+                                                "rating": {
+                                                    "type": "number",
+                                                    "examples": [
+                                                        4.8
+                                                    ]
+                                                },
+                                                "image_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Public image URL, or null. Storage paths are never exposed.",
+                                                    "examples": [
+                                                        "http://localhost:8080/storage/products/example.png"
+                                                    ]
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "examples": [
+                                                        "2026-01-01T00:00:00.000000Z"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "description",
+                                                "price",
+                                                "image_url"
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "data": {
+                                                "id": 1,
+                                                "name": "Studio Wireless Headphones",
+                                                "description": "Comfortable wireless headphones for everyday listening.",
+                                                "category": {
+                                                    "id": 1,
+                                                    "name": "Audio"
+                                                },
+                                                "price": "129.00",
+                                                "rating": 4.8,
+                                                "image_url": "http://localhost:8080/storage/products/example.png",
+                                                "created_at": "2026-01-01T00:00:00.000000Z",
+                                                "updated_at": "2026-01-01T00:00:00.000000Z"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Unauthenticated."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Unauthenticated."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "Resource not found."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "Resource not found."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "413": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "The upload is too large."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "The upload is too large."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "The image field must be an image."
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "image": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "examples": [
+                                                        [
+                                                            "The image field must be an image."
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "The image field must be an image.",
+                                            "errors": {
+                                                "image": [
+                                                    "The image field must be an image."
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "examples": [
+                                                "An unexpected error occurred. Please try again."
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "message": "An unexpected error occurred. Please try again."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Product images"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "image": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "description": "JPEG, PNG, or WebP file up to 5 MiB. Actual image content is validated; SVG is rejected. Must be a file. Must be an image. Must not be greater than 5120 kilobytes."
+                                    }
+                                },
+                                "required": [
+                                    "image"
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "product",
+                    "description": "Product ID.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "examples": [
+                            1
+                        ]
+                    }
+                }
+            ]
         }
-      }
     }
-  }
 }

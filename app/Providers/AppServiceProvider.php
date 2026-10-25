@@ -13,11 +13,13 @@ use App\Storage\PublicImageStorage;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Knuckles\Scribe\Scribe;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,6 +40,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        if (class_exists(Scribe::class)) {
+            Scribe::normalizeEndpointUrlUsing(fn (string $url, Route $route): string => $route->uri());
+        }
         RateLimiter::for('login', function (Request $request): array {
             $email = is_string($request->input('email')) ? mb_strtolower(trim($request->input('email'))) : '';
 

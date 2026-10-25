@@ -23,4 +23,13 @@ class LoginRequest extends FormRequest
     {
         return ['email' => ['required', 'string', 'email', 'max:255'], 'password' => ['required', 'string', 'max:1024']];
     }
+
+    /** @return array<string, array{description: string, example?: string|int|float}> */
+    public function bodyParameters(): array
+    {
+        return [
+            'email' => ['description' => 'Email address of an existing account.', 'example' => 'demo@rightmo.test'],
+            'password' => ['description' => 'Account password. Local demo only; explicitly seed DemoSeeder first.', 'example' => 'RightmoDemo!2026'],
+        ];
+    }
 }

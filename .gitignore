@@ -44,3 +44,6 @@ yarn-error.log
 /opencode.jsonc
 
 .env.docker
+
+/.scribe
+/public/docs

@@ -1,0 +1,16 @@
+{
+  "data": {
+    "id": 1,
+    "name": "Studio Wireless Headphones",
+    "description": "Comfortable wireless headphones for everyday listening.",
+    "category": {
+      "id": 1,
+      "name": "Audio"
+    },
+    "price": "129.00",
+    "rating": 4.8,
+    "image_url": null,
+    "created_at": "2026-01-01T00:00:00.000000Z",
+    "updated_at": "2026-01-01T00:00:00.000000Z"
+  }
+}

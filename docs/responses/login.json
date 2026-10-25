@@ -1,0 +1,12 @@
+{
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "Alex Morgan",
+      "email": "demo@rightmo.test"
+    },
+    "token": "1|EXAMPLE_TOKEN_NOT_VALID",
+    "token_type": "Bearer",
+    "expires_at": "2026-01-01T08:00:00+00:00"
+  }
+}

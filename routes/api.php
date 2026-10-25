@@ -13,6 +13,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('categories', CategoryController::class)->name('categories.index');
         Route::post('products/{product}/image', ProductImageController::class)->whereNumber('product')->name('products.image');
-        Route::apiResource('products', ProductController::class)->where(['product' => '[0-9]+']);
+        Route::put('products/{product}', [ProductController::class, 'update'])->whereNumber('product')->name('products.replace');
+        Route::patch('products/{product}', [ProductController::class, 'update'])->whereNumber('product')->name('products.update');
+        Route::apiResource('products', ProductController::class)->except('update')->where(['product' => '[0-9]+']);
     });
 });
