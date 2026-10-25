@@ -50,13 +50,13 @@ class ProductImageTest extends TestCase
         Sanctum::actingAs(User::factory()->create());
         $product = Product::factory()->create(['image_path' => 'products/old.png']);
         Storage::disk('public')->put('products/old.png', 'old');
-        DB::unprepared("CREATE TRIGGER reject_image_update BEFORE UPDATE ON products FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Simulated write failure'");
+        DB::unprepared("ALTER TABLE products ADD CONSTRAINT reject_image_update CHECK (image_path = 'products/old.png')");
         try {
             $this->postJson('/api/v1/products/'.$product->id.'/image', ['image' => UploadedFile::fake()->image('new.png')])->assertStatus(500)->assertExactJson(['message' => 'An unexpected error occurred. Please try again.']);
             $this->assertSame('products/old.png', $product->fresh()->image_path);
             $this->assertSame(['products/old.png'], Storage::disk('public')->allFiles());
         } finally {
-            DB::unprepared('DROP TRIGGER IF EXISTS reject_image_update');
+            DB::unprepared('ALTER TABLE products DROP CHECK reject_image_update');
         }
     }
 
