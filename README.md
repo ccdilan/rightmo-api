@@ -41,6 +41,7 @@ docker compose up -d mysql
 php artisan migrate
 php artisan db:seed --class=DemoSeeder
 php artisan storage:link
+composer docs
 php artisan serve --host=127.0.0.1 --port=8080
 ```
 
@@ -48,7 +49,7 @@ Stop the Nginx container first if port 8080 is occupied. Start the frontend with
 
 ## API
 
-Open the **[Scribe API documentation](http://localhost:8080/docs/)** for endpoint descriptions, example requests/responses, and **Try it out**. Log in through the authentication endpoint, then paste `data.token` into the Bearer token input for protected requests. Interactive writes operate on the shared catalog; the example token is intentionally invalid.
+Open the **[Scribe API documentation](http://localhost:8080/docs/)** for endpoint descriptions, example requests/responses, and **Try it out**. Use **Try it out** on the login endpoint, then set the **Authorization** field on protected requests to `Bearer <data.token>` using the returned token. Interactive writes operate on the shared catalog; the example token is intentionally invalid.
 
 Download the generated [OpenAPI 3.1 YAML](http://localhost:8080/docs/openapi.yaml), [OpenAPI JSON](http://localhost:8080/docs/openapi.json), or [Postman collection](http://localhost:8080/docs/collection.json). A reviewable copy of the [generated OpenAPI JSON](docs/openapi.json) is committed with the source. API information is at `/`; health is at `/up`.
 
